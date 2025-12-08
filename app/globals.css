@@ -41,6 +41,15 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  
+  /* Instagram 컬러 스키마 */
+  --color-instagram-blue: #0095f6;
+  --color-instagram-background: #fafafa;
+  --color-instagram-card: #ffffff;
+  --color-instagram-border: #dbdbdb;
+  --color-instagram-text-primary: #262626;
+  --color-instagram-text-secondary: #8e8e8e;
+  --color-instagram-like: #ed4956;
 }
 
 :root {
@@ -76,6 +85,15 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  
+  /* Instagram 컬러 변수 (PRD.md 참고) */
+  --instagram-blue: #0095f6;
+  --instagram-background: #fafafa;
+  --instagram-card-background: #ffffff;
+  --instagram-border: #dbdbdb;
+  --instagram-text-primary: #262626;
+  --instagram-text-secondary: #8e8e8e;
+  --instagram-like: #ed4956;
 }
 
 .dark {
@@ -118,8 +136,22 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Instagram 폰트 패밀리 */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   main {
     @apply max-w-7xl mx-auto pt-16 px-4;
   }
+}
+
+/* Instagram 타이포그래피 변수 (PRD.md 참고) */
+:root {
+  --text-xs: 12px; /* 시간 */
+  --text-sm: 14px; /* 기본 */
+  --text-base: 16px; /* 입력창 */
+  --text-xl: 20px; /* 프로필 */
+  
+  --font-normal: 400;
+  --font-semibold: 600;
+  --font-bold: 700;
 }

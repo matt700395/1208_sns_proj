@@ -49,6 +49,7 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <SyncUserProvider>
+            {/* Navbar는 인증 전용 페이지에서만 표시 (main 그룹에서는 사용하지 않음) */}
             <Navbar />
             {children}
           </SyncUserProvider>
