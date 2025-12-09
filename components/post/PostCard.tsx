@@ -13,41 +13,84 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Heart,
   MessageCircle,
   Send,
   Bookmark,
   MoreHorizontal,
 } from "lucide-react";
-import type { PostWithUser } from "@/lib/types";
+import type { PostWithUser, CommentWithUser } from "@/lib/types";
 import { formatRelativeTime } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import LikeButton from "./LikeButton";
 
 interface PostCardProps {
   post: PostWithUser;
-  onLikeToggle?: (postId: string, isLiked: boolean) => void;
+  onLikeToggle?: (postId: string, isLiked: boolean, likesCount: number) => void;
 }
 
 export default function PostCard({ post, onLikeToggle }: PostCardProps) {
-  const [isLiked, setIsLiked] = useState(post.is_liked || false);
   const [likesCount, setLikesCount] = useState(post.likes_count || 0);
   const [showFullCaption, setShowFullCaption] = useState(false);
+  const [comments, setComments] = useState<CommentWithUser[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
+  const [triggerDoubleTap, setTriggerDoubleTap] = useState(false);
 
   // 캡션 줄 수 계산 (대략적으로)
   const captionLines = post.caption ? post.caption.split("\n").length : 0;
   const shouldTruncate = post.caption && post.caption.length > 100;
 
-  const handleLikeClick = () => {
-    const newLikedState = !isLiked;
-    setIsLiked(newLikedState);
-    setLikesCount((prev) => (newLikedState ? prev + 1 : prev - 1));
+  // 댓글 미리보기 로드 (최신 2개)
+  useEffect(() => {
+    if (post.comments_count > 0) {
+      const loadComments = async () => {
+        try {
+          setLoadingComments(true);
+          setCommentsError(null);
 
+          const response = await fetch(
+            `/api/comments?postId=${post.id}&limit=2&offset=0`
+          );
+
+          if (!response.ok) {
+            throw new Error("댓글을 불러오는 중 오류가 발생했습니다.");
+          }
+
+          const data: CommentWithUser[] = await response.json();
+          setComments(data);
+        } catch (err) {
+          // 에러 발생 시 무시 (댓글 미리보기는 선택적 기능)
+          setCommentsError(
+            err instanceof Error ? err.message : "알 수 없는 오류"
+          );
+          console.error("Error loading comments:", err);
+        } finally {
+          setLoadingComments(false);
+        }
+      };
+
+      loadComments();
+    }
+  }, [post.id, post.comments_count]);
+
+  const handleLikeButtonToggle = (
+    postId: string,
+    isLiked: boolean,
+    newLikesCount: number
+  ) => {
+    setLikesCount(newLikesCount);
     if (onLikeToggle) {
-      onLikeToggle(post.id, newLikedState);
+      onLikeToggle(postId, isLiked, newLikesCount);
+    }
+  };
+
+  const handleImageDoubleClick = () => {
+    // 더블탭 트리거 (이미 좋아요를 누른 경우는 무시)
+    if (!post.is_liked) {
+      setTriggerDoubleTap((prev) => !prev);
     }
   };
 
@@ -90,7 +133,10 @@ export default function PostCard({ post, onLikeToggle }: PostCardProps) {
       </header>
 
       {/* 이미지 영역 (1:1 정사각형) */}
-      <div className="relative w-full aspect-square bg-gray-100">
+      <div
+        className="relative w-full aspect-square bg-gray-100"
+        onDoubleClick={handleImageDoubleClick}
+      >
         <Image
           src={post.image_url}
           alt={post.caption || "게시물 이미지"}
@@ -105,21 +151,13 @@ export default function PostCard({ post, onLikeToggle }: PostCardProps) {
       <div className="flex items-center justify-between px-4 py-3 h-[48px]">
         <div className="flex items-center gap-4">
           {/* 좋아요 버튼 */}
-          <button
-            type="button"
-            onClick={handleLikeClick}
-            className="p-0 hover:opacity-70 transition-transform active:scale-95"
-            aria-label={isLiked ? "좋아요 취소" : "좋아요"}
-          >
-            <Heart
-              className={cn(
-                "w-6 h-6 transition-all",
-                isLiked
-                  ? "fill-[#ed4956] text-[#ed4956]"
-                  : "text-[#262626]"
-              )}
-            />
-          </button>
+          <LikeButton
+            postId={post.id}
+            initialLiked={post.is_liked || false}
+            initialLikesCount={post.likes_count || 0}
+            onToggle={handleLikeButtonToggle}
+            triggerDoubleTap={triggerDoubleTap}
+          />
 
           {/* 댓글 버튼 */}
           <button
@@ -194,11 +232,33 @@ export default function PostCard({ post, onLikeToggle }: PostCardProps) {
             >
               댓글 {post.comments_count}개 모두 보기
             </button>
-            {/* TODO: 최신 2개 댓글 표시 (댓글 기능 구현 후) */}
+
+            {/* 최신 2개 댓글 표시 */}
+            {loadingComments ? (
+              <div className="space-y-1">
+                <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-2/3 bg-gray-200 rounded animate-pulse" />
+              </div>
+            ) : comments.length > 0 ? (
+              <div className="space-y-1">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="text-sm text-[#262626]">
+                    <Link
+                      href={`/profile/${comment.user.id}`}
+                      className="font-semibold hover:opacity-70 mr-1"
+                    >
+                      {comment.user.name}
+                    </Link>
+                    <span>{comment.content}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         )}
       </div>
     </article>
   );
 }
+
 

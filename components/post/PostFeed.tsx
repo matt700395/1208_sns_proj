@@ -107,18 +107,21 @@ export default function PostFeed({ userId }: PostFeedProps) {
   }, [hasMore, loading, page, loadPosts]);
 
   // 좋아요 토글 핸들러
-  const handleLikeToggle = async (postId: string, isLiked: boolean) => {
-    // TODO: 좋아요 API 호출 (좋아요 기능 구현 후)
-    // 현재는 로컬 상태만 업데이트
+  // Note: 실제 API 호출은 LikeButton 컴포넌트에서 수행되며,
+  // 이 함수는 성공 후 로컬 상태를 업데이트하는 역할만 합니다.
+  const handleLikeToggle = async (
+    postId: string,
+    isLiked: boolean,
+    likesCount: number
+  ) => {
+    // 로컬 상태 업데이트 (LikeButton에서 이미 API 호출 완료)
     setPosts((prev) =>
       prev.map((post) => {
         if (post.id === postId) {
           return {
             ...post,
             is_liked: isLiked,
-            likes_count: isLiked
-              ? (post.likes_count || 0) + 1
-              : Math.max(0, (post.likes_count || 0) - 1),
+            likes_count: likesCount,
           };
         }
         return post;
@@ -185,4 +188,5 @@ export default function PostFeed({ userId }: PostFeedProps) {
     </div>
   );
 }
+
 
